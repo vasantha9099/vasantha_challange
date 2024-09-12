@@ -1,7 +1,15 @@
-# RandomName
+import re
 
-## Execution
+n = int(input())
+pattern = r'^[4-6]\d{3}(-?\d{4}){3}$'
 
-- **Must** replace this section with the execution instructions.
-- **Must** not include any content from the **original** document.
-- Provide any additional information that may be helpful to the reviewer.
+
+for _ in range(n):
+    string = input()
+    replace_String = string.replace("-", "")
+    consecutive = re.search(r'(\d)\1{3}', replace_String)
+    matches = re.search(pattern,string)
+    if matches and len(replace_String) == 16 and not consecutive:
+        print('Valid')
+    else:
+        print('Invalid')
