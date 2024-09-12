@@ -1,0 +1,49 @@
+- name: Configure Web Server
+  hosts: webserver
+  become: yes
+  tasks:
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: present
+
+    - name: Start and enable Apache
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Create index.html
+      copy:
+        content: |
+          <html>
+          <head>
+            <title>Hello World</title>
+          </head>
+          <body>
+            <h1>Hello World!</h1>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+
+    - name: Install SSL
+      yum:
+        name: mod_ssl
+        state: present
+
+    - name: Generate self-signed SSL certificate
+      openssl_certificate:
+        path: /etc/ssl/certs/selfsigned.crt
+        privatekey_path: /etc/ssl/private/selfsigned.key
+        common_name: example.com
+        state: present
+
+    - name: Configure SSL for Apache
+      template:
+        src: ssl.conf.j2
+        dest: /etc/httpd/conf.d/ssl.conf
+      
+    - name: Restart Apache
+      service:
+        name: httpd
+        state: restarted

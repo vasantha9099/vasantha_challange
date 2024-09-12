@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploy a secure EC2 instance with a web server
+
+Resources:
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0c55b159cbfafe1f0  # Amazon Linux 2 AMI (update as needed)
+      KeyName: my-key-pair  # Update with your key pair name
+      SecurityGroups:
+        - Ref: WebServerSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
+          systemctl enable httpd
+          echo "<html><head><title>Hello World</title></head><body><h1>Hello World!</h1></body></html>" > /var/www/html/index.html
+          yum install -y mod_ssl
+          openssl req -newkey rsa:2048 -nodes -keyout /etc/ssl/private/selfsigned.key -x509 -days 365 -out /etc/ssl/certs/selfsigned.crt -subj "/C=US/ST=State/L=City/O=Company/CN=example.com"
+          echo "<VirtualHost *:80>
+            Redirect permanent / https://example.com/
+          </VirtualHost>
+          <VirtualHost *:443>
+            SSLEngine on
+            SSLCertificateFile /etc/ssl/certs/selfsigned.crt
+            SSLCertificateKeyFile /etc/ssl/private/selfsigned.key
+            DocumentRoot /var/www/html
+          </VirtualHost>" > /etc/httpd/conf.d/ssl.conf
+          systemctl restart httpd
+
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP and HTTPS access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
